@@ -7,14 +7,14 @@
 <meta name="theme-color" content="#070b14">
 <title>Deeplaxmi Fresh Order</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Layout: dark glass storefront — glowing gradient hero, sticky glass search/chips, 2–4 col produce tiles with colour halos, floating cart pill, glass checkout sheet */
+/* Layout: futuristic glass storefront — page-wide aurora, hero with floating produce orbs, live mandi-rate ticker, — glowing gradient hero, sticky glass search/chips, 2–4 col produce tiles with colour halos, floating cart pill, glass checkout sheet */
 :root{
   --bg:#070b14; --bg2:#0d1424; --glass:rgba(255,255,255,.055); --glass-hi:rgba(255,255,255,.1);
   --edge:rgba(255,255,255,.12); --ink:#eef3ff; --muted:#8e9bb8;
   --lime:#a6f04a; --mango:#ffb23e; --tomato:#ff5a5f; --aqua:#3ee6d0; --on-accent:#08110a;
-  --display:"Unbounded", "Manrope", system-ui, sans-serif; --body:"Manrope", system-ui, sans-serif;
+  --display:"Unbounded", "Manrope", system-ui, sans-serif; --body:"Manrope", system-ui, sans-serif; --mono:"JetBrains Mono", ui-monospace, monospace;
   color-scheme:dark;
 }
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
@@ -43,7 +43,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .grid-lines{position:absolute;inset:0;z-index:-1;opacity:.35;
   background-image:linear-gradient(var(--edge) 1px,transparent 1px),linear-gradient(90deg,var(--edge) 1px,transparent 1px);
   background-size:36px 36px;mask-image:linear-gradient(to bottom,#000 10%,transparent 90%);-webkit-mask-image:linear-gradient(to bottom,#000 10%,transparent 90%)}
-.hero .wrap{padding-block:28px 26px;display:flex;flex-direction:column;gap:14px}
+.hero .wrap{padding-block:28px 26px}
 .brand{display:flex;align-items:center;gap:10px;font:700 .8rem var(--display);letter-spacing:.14em;text-transform:uppercase}
 .logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:conic-gradient(from 200deg,var(--lime),var(--aqua),var(--mango),var(--tomato),var(--lime));color:#08110a;font-weight:800;font-size:1rem;letter-spacing:0}
 .live{margin-left:auto;display:flex;align-items:center;gap:6px;font:600 .72rem var(--body);letter-spacing:.06em;color:var(--muted);background:var(--glass);border:1px solid var(--edge);padding:5px 10px;border-radius:999px}
@@ -80,13 +80,13 @@ h2 small{font:600 .75rem var(--body);color:var(--muted)}
 .tile.on{border-color:color-mix(in srgb,var(--h) 70%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--h) 40%,transparent),0 10px 30px -12px var(--h)}
 .pic{aspect-ratio:1.35;max-width:100%;border-radius:14px;display:grid;place-items:center;font-size:2.6rem;
   background:radial-gradient(circle at 50% 60%,color-mix(in srgb,var(--h) 45%,transparent),transparent 70%),var(--glass-hi)}
-.pic span{filter:drop-shadow(0 8px 14px rgba(0,0,0,.35));transition:transform .3s}
+.pic span:not(.chipprice){filter:drop-shadow(0 8px 14px rgba(0,0,0,.35));transition:transform .3s}
 .pic{position:relative;overflow:hidden}
 .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s ease;z-index:1}
 .pic::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(to top,rgba(0,0,0,.28),transparent 45%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);border-radius:inherit}
 .tile:hover .pic img{transform:scale(1.08)}
 .tile.on .pic::before{content:"✓";position:absolute;top:8px;right:8px;z-index:3;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.8rem;background:var(--lime);color:var(--on-accent);box-shadow:0 0 12px var(--lime)}
-.tile:hover .pic span{transform:scale(1.12) rotate(-6deg)}
+.tile:hover .pic span:not(.chipprice){transform:scale(1.12) rotate(-6deg)}
 .nm b{display:block;font-weight:700;font-size:.95rem;line-height:1.2}
 .nm i{font-style:normal;color:var(--muted);font-size:.78rem}
 .price{display:flex;align-items:baseline;gap:3px;font-variant-numeric:tabular-nums}
@@ -138,21 +138,97 @@ select option{background:var(--bg2);color:var(--ink)}
 .ghost{font:600 .9rem var(--body);padding:11px;border-radius:12px;border:1px solid var(--edge);background:transparent;color:var(--ink);cursor:pointer}
 .small{font-size:.8rem;color:var(--muted);margin:0}
 button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--aqua);outline-offset:2px}
+
+/* ===== futuristic layer ===== */
+@property --ang{syntax:"<angle>";inherits:false;initial-value:0deg}
+.aurora{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.35;animation:float 22s ease-in-out infinite alternate}
+.aurora i:nth-child(1){width:55vmax;height:55vmax;background:var(--lime);top:-25vmax;left:-20vmax}
+.aurora i:nth-child(2){width:45vmax;height:45vmax;background:var(--aqua);top:30%;right:-25vmax;animation-delay:-7s}
+.aurora i:nth-child(3){width:40vmax;height:40vmax;background:var(--tomato);bottom:-25vmax;left:20%;opacity:.22;animation-delay:-13s}
+@keyframes float{50%{transform:translate(6vmax,4vmax) scale(1.1)}100%{transform:translate(-4vmax,8vmax) scale(.95)}}
+.aurora::after{content:"";position:absolute;inset:0;
+  background-image:linear-gradient(var(--edge) 1px,transparent 1px),linear-gradient(90deg,var(--edge) 1px,transparent 1px);
+  background-size:44px 44px;opacity:.25;mask-image:radial-gradient(ellipse at 50% 0%,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000 20%,transparent 75%)}
+
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:center;gap:18px}
+.hero-copy{display:flex;flex-direction:column;gap:14px;min-width:0}
+.hero .brand{grid-column:1/-1}
+h1 em{background-size:220% 100%;background-image:linear-gradient(90deg,var(--lime),var(--aqua),var(--mango),var(--lime));animation:shimmer 6s linear infinite}
+@keyframes shimmer{to{background-position:-220% 0}}
+.orbit{position:relative;aspect-ratio:1;max-width:340px;width:100%;justify-self:center}
+.orbit .ring{position:absolute;inset:8%;border-radius:50%;border:1px dashed color-mix(in srgb,var(--aqua) 45%,transparent);animation:spin 40s linear infinite}
+.orbit .ring.r2{inset:24%;border-style:solid;border-color:color-mix(in srgb,var(--lime) 30%,transparent);animation-duration:26s;animation-direction:reverse}
+.orbit .core{position:absolute;inset:36%;border-radius:50%;display:grid;place-items:center;text-align:center;font:800 .7rem var(--display);letter-spacing:.08em;line-height:1.3;
+  background:radial-gradient(circle,color-mix(in srgb,var(--lime) 35%,transparent),transparent 70%);color:var(--ink)}
+.orbit .core b{display:block;font:800 1.6rem var(--display);background:linear-gradient(135deg,var(--lime),var(--aqua));-webkit-background-clip:text;background-clip:text;color:transparent}
+.bub{position:absolute;width:30%;aspect-ratio:1;border-radius:50%;overflow:hidden;border:2px solid color-mix(in srgb,var(--c) 80%,transparent);
+  box-shadow:0 0 0 6px color-mix(in srgb,var(--c) 14%,transparent),0 18px 40px -12px var(--c);background:var(--glass-hi);animation:bob 5s ease-in-out infinite}
+.bub{display:grid;place-items:center;font-size:2rem}
+.bub img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.bub.b1{top:0;left:35%;--c:var(--tomato)} .bub.b2{top:38%;right:0;--c:var(--mango);animation-delay:-1.2s}
+.bub.b3{bottom:0;left:30%;--c:var(--lime);animation-delay:-2.4s} .bub.b4{top:30%;left:0;--c:#c77dff;animation-delay:-3.6s}
+@keyframes bob{50%{transform:translateY(-10px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (max-width:700px){.hero .wrap{grid-template-columns:1fr}.orbit{max-width:200px;margin-top:-6px}.orbit .core b{font-size:1.2rem}.orbit .core{font-size:.55rem}}
+
+.ticker{position:relative;overflow:hidden;border-block:1px solid var(--edge);background:color-mix(in srgb,var(--bg2) 60%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.ticker .tag{position:absolute;left:0;top:0;bottom:0;z-index:2;display:flex;align-items:center;gap:6px;padding-inline:max(12px,env(safe-area-inset-left,0px)) 14px;font:700 .68rem var(--mono);letter-spacing:.1em;color:var(--on-accent);background:var(--lime)}
+.ticker .tag i{width:6px;height:6px;border-radius:50%;background:var(--on-accent);animation:pulse 1.2s infinite}
+.track{display:flex;width:max-content;animation:marquee 45s linear infinite;padding-block:9px}
+.ticker:hover .track{animation-play-state:paused}
+.track span{font:500 .78rem var(--mono);white-space:nowrap;padding-inline:18px;color:var(--muted);border-right:1px solid var(--edge)}
+.track span b{color:var(--ink);font-weight:700}
+.track span em{font-style:normal;color:var(--lime)}
+@keyframes marquee{to{transform:translateX(-50%)}}
+
+h2::before{content:"";width:8px;height:8px;border-radius:2px;transform:rotate(45deg);background:var(--lime);box-shadow:0 0 12px var(--lime)}
+h2{text-transform:uppercase;letter-spacing:.08em;font-size:.85rem}
+h2 small{font-family:var(--mono)}
+
+.tile{isolation:isolate;animation:rise .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 35ms)}
+@keyframes rise{from{transform:translateY(16px)}}
+.tile::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1.5px;z-index:-1;opacity:0;transition:opacity .3s;
+  background:conic-gradient(from var(--ang),var(--h),var(--aqua),transparent 40%,var(--h));animation:spin-ang 4s linear infinite;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.tile:hover::before,.tile.on::before{opacity:1}
+@keyframes spin-ang{to{--ang:360deg}}
+.chipprice{position:absolute;left:8px;bottom:8px;z-index:3;font:700 .78rem var(--mono);padding:4px 9px;border-radius:999px;color:#fff;
+  background:rgba(8,12,22,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.18);font-variant-numeric:tabular-nums}
+.chipprice small{font-weight:500;opacity:.75}
+.add{background:linear-gradient(var(--glass-hi),var(--glass-hi)) padding-box,linear-gradient(var(--bg2),var(--bg2)) padding-box,linear-gradient(135deg,color-mix(in srgb,var(--h) 70%,transparent),var(--edge)) border-box;border:1px solid transparent}
+.add:hover{background:linear-gradient(135deg,var(--lime),var(--aqua));box-shadow:0 8px 24px -8px var(--lime)}
+.step{background:linear-gradient(135deg,var(--lime),var(--aqua));box-shadow:0 8px 24px -10px var(--lime)}
+
+.pill{position:relative;isolation:isolate}
+.pill::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1.5px;z-index:-1;
+  background:conic-gradient(from var(--ang),var(--lime),var(--aqua),var(--mango),var(--tomato),var(--lime));animation:spin-ang 3s linear infinite;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.pill.bump{animation:bump .45s ease}
+@keyframes bump{30%{transform:scale(1.04)}}
+.go{box-shadow:0 0 24px -4px color-mix(in srgb,var(--aqua) 70%,transparent)}
+.panel{background:color-mix(in srgb,var(--bg2) 88%,transparent);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+.stat{position:relative;overflow:hidden}
+.stat b{font-family:var(--mono)}
 footer{color:var(--muted);font-size:.8rem;text-align:center;padding-block:10px 20px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
 <section class="hero">
-  <div class="grid-lines"></div><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
   <div class="wrap">
     <div class="brand"><span class="logo">D</span>Deeplaxmi<span class="live"><i></i>Taking orders</span></div>
-    <h1>Mandi-fresh sabzi &amp; fruits, <em>ordered on WhatsApp.</em></h1>
-    <p class="sub">Pick your items, add your address, tap send. We pack fresh and deliver to your door in Pune.</p>
-    <div class="stats" id="stats"></div>
+    <div class="hero-copy">
+      <h1>Mandi-fresh sabzi &amp; fruits, <em>ordered on WhatsApp.</em></h1>
+      <p class="sub">Pick your items, add your address, tap send. We pack fresh and deliver to your door in Pune.</p>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="orbit" id="orbit" aria-hidden="true"><div class="ring"></div><div class="ring r2"></div><div class="core"><span><b>Fresh</b>EVERY<br>MORNING</span></div></div>
   </div>
 </section>
+<div class="ticker" aria-label="Today's rates"><span class="tag"><i></i>TODAY</span><div class="track" id="track"></div></div>
 
 <div class="bar"><div class="wrap">
   <div class="search"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -236,6 +312,10 @@ function qtyLabel(it, n){
   return n + " " + ({pc: n>1?"pcs":"pc", bunch: n>1?"bunches":"bunch", dozen:"dz"}[it.unit]);
 }
 
+$("orbit").insertAdjacentHTML("beforeend", ["Tomato","Pomegranate","Lady finger","Grapes"].map((n,i) =>
+  `<div class="bub b${i+1}">${ITEMS.find(x=>x.name===n).pic}<img src="${photoUrl(PHOTOS[n])}" alt="" onerror="this.remove()"></div>`).join(""));
+{ const rates = ITEMS.map(it => `<span>${it.pic} <b>${it.name.toUpperCase()}</b> <em>${rs(it.price)}</em>/${it.unit}</span>`).join("");
+  $("track").innerHTML = rates + rates; }
 $("stats").innerHTML =
   `<div class="stat"><b>${ITEMS.length}+</b><span>fresh items</span></div>` +
   `<div class="stat"><b>${rs(SHOP.freeDeliveryAbove)}</b><span>free delivery above</span></div>` +
@@ -256,10 +336,9 @@ function control(it){
   if (!n) return `<button class="add" type="button" data-add="${it.id}">+ Add</button>`;
   return `<div class="step"><button type="button" data-dec="${it.id}" aria-label="Less ${it.name}">−</button><output>${qtyLabel(it,n)}</output><button type="button" data-inc="${it.id}" aria-label="More ${it.name}">+</button></div>`;
 }
-const tile = it => `<div class="tile${cart[it.id]?" on":""}" id="t${it.id}" style="--h:${it.hue}">
-  <div class="pic">${PHOTOS[it.name] ? `<img src="${photoUrl(PHOTOS[it.name])}" alt="Fresh ${it.name}" loading="lazy" decoding="async" onerror="this.remove()">` : ""}<span>${it.pic}</span></div>
+const tile = it => `<div class="tile${cart[it.id]?" on":""}" id="t${it.id}" style="--h:${it.hue};--i:${it.id%10}">
+  <div class="pic">${PHOTOS[it.name] ? `<img src="${photoUrl(PHOTOS[it.name])}" alt="Fresh ${it.name}" loading="lazy" decoding="async" onerror="this.remove()">` : ""}<span>${it.pic}</span><span class="chipprice">${rs(it.price)}<small>/${it.unit}</small></span></div>
   <div class="nm"><b>${it.name}</b><i>${it.local}</i></div>
-  <div class="price"><b>${rs(it.price)}</b><span>/ ${it.unit}</span></div>
   <div id="c${it.id}">${control(it)}</div></div>`;
 
 function render(){
@@ -288,6 +367,7 @@ function totals(){
   return {lines, sub, del, total: sub + del};
 }
 function updateCart(){
+  const pill = document.querySelector('.pill'); pill.classList.remove('bump'); void pill.offsetWidth; pill.classList.add('bump');
   const t = totals();
   $("cart").hidden = !t.lines.length;
   $("cartTotal").textContent = rs(t.sub);
