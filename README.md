@@ -1,7 +1,11 @@
 # Deeplaxmi Vegetables & Fruits
 
-Online ordering site. Customers pick items and send the order on WhatsApp.
+- Customer website: https://vinodchoudhary-ai.github.io/deeplaxmi/
+- Order Desk (shop only): `staff-5f5ea8/`
 
-Live: https://vinodchoudhary-ai.github.io/deeplaxmi/
-
-To change prices, items or the WhatsApp number, edit the `SHOP` and `ITEMS` section near the top of the script in `index.html`.
+## Files
+- `index.html`: customer ordering page
+- `staff-5f5ea8/index.html`: Order Desk (orders, confirm, weigh, bill, rates)
+- `shop-db.js`: shared data layer and starting item list
+- `firebase-config.js`: Firebase connection (null until set up)
+- `firestore.rules`: security rules to paste into the Firebase console

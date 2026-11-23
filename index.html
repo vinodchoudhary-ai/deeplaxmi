@@ -214,6 +214,9 @@ h2 small{font-family:var(--mono)}
 .panel{background:color-mix(in srgb,var(--bg2) 88%,transparent);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
 .stat{position:relative;overflow:hidden}
 .stat b{font-family:var(--mono)}
+.tile.off{opacity:.5;filter:grayscale(.85)}
+.tile.off .add{cursor:not-allowed}
+.add:disabled:hover{background:var(--glass-hi);color:var(--muted);box-shadow:none}
 footer{color:var(--muted);font-size:.8rem;text-align:center;padding-block:10px 20px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
@@ -283,6 +286,8 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding-block:10px 2
 
 <footer class="wrap">Deeplaxmi Vegetables &amp; Fruits · WhatsApp <span id="waShow"></span><br><span style="opacity:.7">Photos: <a href="https://www.pexels.com" target="_blank" rel="noopener" style="color:inherit">Pexels</a></span></footer>
 
+<script src="firebase-config.js"></script>
+<script src="shop-db.js"></script>
 <script>
 /* ===== EDIT THESE ===== */
 const SHOP = {
@@ -293,46 +298,57 @@ const SHOP = {
   deliveryCharge: 20,             // ₹ charge below that
   slots: ["Morning 8–11 am", "Afternoon 12–3 pm", "Evening 5–8 pm"]
 };
-/* [category, name, local name, unit, price per unit, picture, glow colour]. unit: kg (250 g steps), pc, bunch, dozen. Sample prices — update daily. */
-const ITEMS = [
-  ["Sabzi","Tomato","Tamatar","kg",40,"🍅","#ff5a5f"],["Sabzi","Onion","Kanda / Pyaz","kg",35,"🧅","#c77dff"],["Sabzi","Potato","Batata / Aloo","kg",30,"🥔","#d4a373"],
-  ["Sabzi","Green chilli","Hari mirch","kg",80,"🌶️","#a6f04a"],["Sabzi","Ginger","Adrak","kg",120,"🫚","#e9c46a"],["Sabzi","Garlic","Lehsun","kg",200,"🧄","#f1f1e6"],
-  ["Sabzi","Cauliflower","Phool gobi","pc",40,"🥦","#a6f04a"],["Sabzi","Cabbage","Patta gobi","pc",30,"🥬","#7bd389"],["Sabzi","Brinjal","Vangi / Baingan","kg",50,"🍆","#9d4edd"],
-  ["Sabzi","Lady finger","Bhindi","kg",60,"🫛","#6fcf5b"],["Sabzi","Capsicum","Shimla mirch","kg",70,"🫑","#52b788"],["Sabzi","Carrot","Gajar","kg",50,"🥕","#ff8c42"],
-  ["Sabzi","Cucumber","Kakdi","kg",40,"🥒","#74c69d"],["Sabzi","Bottle gourd","Dudhi / Lauki","pc",30,"🥒","#95d5b2"],["Sabzi","Lemon","Limbu","pc",5,"🍋","#ffd60a"],
-  ["Leafy","Coriander","Kothimbir","bunch",15,"🌿","#3ee6d0"],["Leafy","Methi","Methi","bunch",20,"🌱","#a6f04a"],["Leafy","Spinach","Palak","bunch",20,"🥬","#2dc653"],
-  ["Leafy","Mint","Pudina","bunch",10,"🌿","#5ef2b5"],["Leafy","Spring onion","Kanda paat","bunch",20,"🌱","#b5e48c"],["Leafy","Curry leaves","Kadipatta","bunch",10,"🍃","#40c057"],
-  ["Fruits","Banana","Keli / Kela","dozen",60,"🍌","#ffd60a"],["Fruits","Apple (Shimla)","Safarchand","kg",160,"🍎","#ff4d6d"],["Fruits","Pomegranate","Dalimb / Anar","kg",180,"🔴","#e63946"],
-  ["Fruits","Papaya","Papai","pc",60,"🥭","#ff9f1c"],["Fruits","Guava","Peru","kg",80,"🍐","#99d98c"],["Fruits","Sweet lime","Mosambi","kg",80,"🍈","#d9ed92"],
-  ["Fruits","Orange","Santra","kg",100,"🍊","#ffb23e"],["Fruits","Custard apple","Sitaphal","kg",120,"🍏","#80ed99"],["Fruits","Grapes","Draksh","kg",120,"🍇","#9d4edd"]
-].map(([cat,name,local,unit,price,pic,hue],i)=>({id:i,cat,name,local,unit,price,pic,hue}));
+/* Items and rates come from the Order Desk → Rates (Firebase). The built-in list in shop-db.js is used until then. */
 /* ====================== */
-
-/* Item photos: Pexels photo IDs (free to use). To change one, open the photo on pexels.com and copy the number at the end of its link. */
-const PHOTOS = {"Tomato": 10112127, "Onion": 7890176, "Potato": 144248, "Green chilli": 12955689, "Ginger": 10112136, "Garlic": 2764164, "Cauliflower": 7572005, "Cabbage": 3283450, "Brinjal": 3948546, "Lady finger": 34168070, "Capsicum": 2893635, "Carrot": 20371247, "Cucumber": 2775838, "Bottle gourd": 39130946, "Lemon": 4089122, "Coriander": 606540, "Methi": 8290265, "Spinach": 38571502, "Mint": 13632808, "Spring onion": 7456538, "Curry leaves": 37215213, "Banana": 4399936, "Apple (Shimla)": 3903599, "Pomegranate": 18523341, "Papaya": 28613331, "Guava": 14617820, "Sweet lime": 39189959, "Orange": 8639570, "Custard apple": 34169446, "Grapes": 3987387};
-const photoUrl = id => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=480&h=360&fit=crop`;
 
 const CATS = [["All","All"],["Sabzi","Vegetables"],["Leafy","Leafy greens"],["Fruits","Fruits"]];
 const $ = id => document.getElementById(id);
 const rs = n => "₹" + Math.round(n).toLocaleString("en-IN");
-const esc = t => String(t).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+const esc = t => String(t ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const photoUrl = ShopDB.photoUrl;
+let ITEMS = [], BY = {};
+function setItems(list){
+  ITEMS = list.filter(it => it && it.key && it.name && +it.price >= 0).map(it => ({...it, price: +it.price, stock: it.stock !== false}));
+  BY = Object.fromEntries(ITEMS.map(it => [it.key, it]));
+}
+setItems(ShopDB.DEFAULT_ITEMS);
+
 let cat = "All", q = "", cart = {};
-try { cart = JSON.parse(localStorage.getItem("dl-cart") || "{}") || {}; } catch(e) { cart = {}; }
-const save = () => { try { localStorage.setItem("dl-cart", JSON.stringify(cart)); } catch(e) {} };
+try { cart = JSON.parse(localStorage.getItem("dl-cart2") || "{}") || {}; } catch(e) { cart = {}; }
+const save = () => { try { localStorage.setItem("dl-cart2", JSON.stringify(cart)); } catch(e) {} };
 const step = it => it.unit === "kg" ? 0.25 : 1;
 function qtyLabel(it, n){
   if (it.unit === "kg") return n < 1 ? Math.round(n*1000) + " g" : (+n.toFixed(2)) + " kg";
   return n + " " + ({pc: n>1?"pcs":"pc", bunch: n>1?"bunches":"bunch", dozen:"dz"}[it.unit]);
 }
+const unitShort = it => ({kg:"kg", pc:"pc", bunch:"bun", dozen:"dz"}[it.unit]);
+const unitWord = it => ({kg:"kg", pc:"pieces", bunch:"bunches", dozen:"dozen"}[it.unit]);
+const qtyVal = (it, n) => String(+n.toFixed(2));
+/* Reads what the customer typed. For kg items, "500g" or any number 50+ is taken as grams. */
+function parseQty(it, raw){
+  const t = String(raw).toLowerCase().replace(",", ".").trim();
+  let v = parseFloat(t); if (!isFinite(v) || v <= 0) return 0;
+  if (it.unit === "kg") {
+    if ((/g/.test(t) && !/kg/.test(t)) || v >= 50) v = v / 1000;
+    v = Math.round(v * 20) / 20;
+    return Math.min(Math.max(v, 0.05), 50);
+  }
+  return Math.min(Math.max(Math.round(v), 1), 100);
+}
 
-$("orbit").insertAdjacentHTML("beforeend", ["Tomato","Pomegranate","Lady finger","Grapes"].map((n,i) =>
-  `<div class="bub b${i+1}">${ITEMS.find(x=>x.name===n).pic}<img src="${photoUrl(PHOTOS[n])}" alt="" onerror="this.remove()"></div>`).join(""));
-{ const rates = ITEMS.map(it => `<span>${it.pic} <b>${it.name.toUpperCase()}</b> <em>${rs(it.price)}</em>/${it.unit}</span>`).join("");
-  $("track").innerHTML = rates + rates; }
-$("stats").innerHTML =
-  `<div class="stat"><b>${ITEMS.length}+</b><span>fresh items</span></div>` +
-  `<div class="stat"><b>${rs(SHOP.freeDeliveryAbove)}</b><span>free delivery above</span></div>` +
-  `<div class="stat"><b>COD</b><span>cash or UPI</span></div>`;
+/* header extras */
+function paintHeader(){
+  const pick = ["tomato","pomegranate","lady-finger","grapes"].map(k => BY[k]).filter(Boolean);
+  document.querySelectorAll("#orbit .bub").forEach(b => b.remove());
+  $("orbit").insertAdjacentHTML("beforeend", pick.map((it,i) =>
+    `<div class="bub b${i+1}">${it.pic}${it.photo ? `<img src="${photoUrl(it.photo)}" alt="" onerror="this.remove()">` : ""}</div>`).join(""));
+  const rates = ITEMS.filter(it => it.stock).map(it => `<span>${it.pic} <b>${esc(it.name.toUpperCase())}</b> <em>${rs(it.price)}</em>/${it.unit}</span>`).join("");
+  $("track").innerHTML = rates + rates;
+  $("stats").innerHTML =
+    `<div class="stat"><b>${ITEMS.filter(i=>i.stock).length}+</b><span>fresh items</span></div>` +
+    `<div class="stat"><b>${rs(SHOP.freeDeliveryAbove)}</b><span>free delivery above</span></div>` +
+    `<div class="stat"><b>COD</b><span>cash or UPI</span></div>`;
+}
 $("waShow").textContent = $("waShow2").textContent = "+" + SHOP.whatsapp.replace(/^91(\d{5})(\d{5})$/, "91 $1 $2");
 $("cslot").innerHTML = SHOP.slots.map(s => `<option>${s}</option>`).join("");
 $("chips").innerHTML = CATS.map(([k,l]) => `<button class="chip" type="button" data-c="${k}" aria-pressed="${k===cat}">${l}</button>`).join("");
@@ -344,101 +360,81 @@ $("chips").addEventListener("click", e => {
 });
 $("q").addEventListener("input", e => { q = e.target.value.trim().toLowerCase(); render(); });
 
-const unitShort = it => ({kg:"kg", pc:"pc", bunch:"bun", dozen:"dz"}[it.unit]);
-const unitWord = it => ({kg:"kg", pc:"pieces", bunch:"bunches", dozen:"dozen"}[it.unit]);
-const qtyVal = (it, n) => String(+n.toFixed(2));
-/* Reads what the customer typed. For kg items, "500g" or any number 50+ is taken as grams. */
-function parseQty(it, raw){
-  const t = String(raw).toLowerCase().replace(",", ".").trim();
-  let v = parseFloat(t); if (!isFinite(v) || v <= 0) return 0;
-  if (it.unit === "kg") {
-    if ((/g/.test(t) && !/kg/.test(t)) || v >= 50) v = v / 1000;
-    v = Math.round(v * 20) / 20;            // nearest 50 g
-    return Math.min(Math.max(v, 0.05), 50);
-  }
-  return Math.min(Math.max(Math.round(v), 1), 100);
-}
 function control(it){
-  const n = cart[it.id] || 0;
-  if (!n) return `<button class="add" type="button" data-add="${it.id}">+ Add</button>`;
-  return `<div class="step"><button type="button" data-dec="${it.id}" aria-label="Less ${it.name}">−</button><label class="qty"><input type="text" inputmode="decimal" autocomplete="off" data-q="${it.id}" value="${qtyVal(it,n)}" aria-label="Quantity of ${it.name} in ${unitWord(it)}"><span>${unitShort(it)}</span></label><button type="button" data-inc="${it.id}" aria-label="More ${it.name}">+</button></div>`;
+  if (!it.stock) return `<button class="add" type="button" disabled>Out of stock</button>`;
+  const n = cart[it.key] || 0;
+  if (!n) return `<button class="add" type="button" data-add="${it.key}">+ Add</button>`;
+  return `<div class="step"><button type="button" data-dec="${it.key}" aria-label="Less ${esc(it.name)}">−</button><label class="qty"><input type="text" inputmode="decimal" autocomplete="off" data-q="${it.key}" value="${qtyVal(it,n)}" aria-label="Quantity of ${esc(it.name)} in ${unitWord(it)}"><span>${unitShort(it)}</span></label><button type="button" data-inc="${it.key}" aria-label="More ${esc(it.name)}">+</button></div>`;
 }
-const tile = it => `<div class="tile${cart[it.id]?" on":""}" id="t${it.id}" style="--h:${it.hue};--i:${it.id%10}">
-  <div class="pic">${PHOTOS[it.name] ? `<img src="${photoUrl(PHOTOS[it.name])}" alt="Fresh ${it.name}" loading="lazy" decoding="async" onerror="this.remove()">` : ""}<span>${it.pic}</span><span class="chipprice">${rs(it.price)}<small>/${it.unit}</small></span></div>
-  <div class="nm"><b>${it.name}</b><i>${it.local}</i></div>
-  <div id="c${it.id}">${control(it)}</div></div>`;
+const tile = (it, i) => `<div class="tile${cart[it.key]?" on":""}${it.stock?"":" off"}" id="t-${it.key}" style="--h:${esc(it.hue||"#a6f04a")};--i:${i%10}">
+  <div class="pic">${it.photo ? `<img src="${photoUrl(it.photo)}" alt="Fresh ${esc(it.name)}" loading="lazy" decoding="async" onerror="this.remove()">` : ""}<span>${it.pic||"🧺"}</span><span class="chipprice">${rs(it.price)}<small>/${it.unit}</small></span></div>
+  <div class="nm"><b>${esc(it.name)}</b><i>${esc(it.local)}</i></div>
+  <div id="c-${it.key}">${control(it)}</div></div>`;
 
 function render(){
+  for (const k of Object.keys(cart)) if (!BY[k] || !BY[k].stock) delete cart[k];   // drop removed / out-of-stock items
   const shown = ITEMS.filter(it => (cat === "All" || it.cat === cat) && (!q || (it.name+" "+it.local).toLowerCase().includes(q)));
   let html = "";
   for (const [k,l] of CATS.slice(1)) {
-    const g = shown.filter(it => it.cat === k);
-    if (g.length) html += `<h2>${l} <small>${g.length}</small></h2><div class="tiles">${g.map(tile).join("")}</div>`;
+    const g = shown.filter(it => it.cat === k).sort((a,b) => (b.stock - a.stock));
+    if (g.length) html += `<h2>${l} <small>${g.filter(i=>i.stock).length}</small></h2><div class="tiles">${g.map(tile).join("")}</div>`;
   }
   $("list").innerHTML = html || `<p class="empty">Nothing matches “${esc(q)}”. Add it in the note at checkout and we'll bring it if available.</p>`;
-  updateCart();
+  save(); updateCart();
 }
+function refreshTile(key){ const it = BY[key]; $("c-"+key).innerHTML = control(it); $("t-"+key).classList.toggle("on", !!cart[key]); save(); updateCart(); }
 function commitQty(inp){
-  const id = +inp.dataset.q, it = ITEMS[id], raw = inp.value.trim(), v = parseQty(it, raw);
-  if (v > 0) { cart[id] = v; inp.value = qtyVal(it, v); save(); updateCart(); return; }
-  if (/^0+([.,]0*)?\s*(k?g)?$/i.test(raw)) {               // typed 0 → remove
-    delete cart[id]; $("c"+id).innerHTML = control(it); $("t"+id).classList.remove("on"); save(); updateCart(); return;
-  }
-  inp.value = qtyVal(it, cart[id] || step(it));            // letters or blank → keep old amount
+  const key = inp.dataset.q, it = BY[key], raw = inp.value.trim(), v = parseQty(it, raw);
+  if (v > 0) { cart[key] = v; inp.value = qtyVal(it, v); save(); updateCart(); return; }
+  if (/^0+([.,]0*)?\s*(k?g)?$/i.test(raw)) { delete cart[key]; refreshTile(key); return; }
+  inp.value = qtyVal(it, cart[key] || step(it));
 }
-function liveQty(inp){                                     // keep basket in step while the customer types
-  const id = +inp.dataset.q, v = parseQty(ITEMS[id], inp.value);
-  if (v > 0) { cart[id] = v; save(); }
-}
-$("list").addEventListener("input", e => { if (e.target.dataset.q !== undefined) liveQty(e.target); });
+$("list").addEventListener("input", e => { const k = e.target.dataset.q; if (k !== undefined) { const v = parseQty(BY[k], e.target.value); if (v > 0) { cart[k] = v; save(); } } });
 $("list").addEventListener("focusin", e => { if (e.target.dataset.q !== undefined) e.target.select(); });
 $("list").addEventListener("change", e => { if (e.target.dataset.q !== undefined) commitQty(e.target); });
 $("list").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset.q !== undefined) { e.preventDefault(); e.target.blur(); } });
 $("list").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b || !b.closest("[id^=c]")) return;
-  const id = +(b.dataset.add ?? b.dataset.inc ?? b.dataset.dec); const it = ITEMS[id];
-  const s = step(it), n = cart[id] || 0;
-  if (b.dataset.dec !== undefined) { const v = +(n - s).toFixed(2); if (v > 0) cart[id] = v; else delete cart[id]; }
-  else cart[id] = +(n + (b.dataset.add !== undefined && it.unit === "kg" ? 0.5 : s)).toFixed(2);
-  $("c"+id).innerHTML = control(it); $("t"+id).classList.toggle("on", !!cart[id]); save(); updateCart();
+  const b = e.target.closest("button"); if (!b || b.disabled) return;
+  const key = b.dataset.add ?? b.dataset.inc ?? b.dataset.dec; if (!key || !BY[key]) return;
+  const it = BY[key], s = step(it), n = cart[key] || 0;
+  if (b.dataset.dec !== undefined) { const v = +(n - s).toFixed(2); if (v > 0) cart[key] = v; else delete cart[key]; }
+  else cart[key] = +(n + (b.dataset.add !== undefined && it.unit === "kg" ? 0.5 : s)).toFixed(2);
+  refreshTile(key);
 });
 
 function totals(){
-  const lines = Object.entries(cart).map(([id,n]) => ({it: ITEMS[id], n})).filter(l => l.it).map(l => ({...l, amt: Math.round(l.it.price*l.n)}));
+  const lines = Object.entries(cart).map(([k,n]) => ({it: BY[k], n})).filter(l => l.it && l.it.stock).map(l => ({...l, amt: Math.round(l.it.price*l.n)}));
   const sub = lines.reduce((s,l) => s + l.amt, 0);
   const del = sub >= SHOP.freeDeliveryAbove || sub === 0 ? 0 : SHOP.deliveryCharge;
   return {lines, sub, del, total: sub + del};
 }
 function updateCart(){
   const pill = document.querySelector('.pill'); pill.classList.remove('bump'); void pill.offsetWidth; pill.classList.add('bump');
-  const t = totals();
-  $("cart").hidden = !t.lines.length;
-  const n = t.lines.length;
+  const t = totals(), n = t.lines.length;
+  $("cart").hidden = !n;
   $("cartTotal").textContent = n + (n === 1 ? " item" : " items") + " in basket";
   $("cartIcons").textContent = t.lines.slice(-6).map(l => l.it.pic).join(" ");
 }
 
+function closeSheet(){ $("sheet").hidden = true; document.body.style.overflow = ""; }
 $("openCheckout").addEventListener("click", () => {
   const t = totals();
-  $("lines").innerHTML = t.lines.map(l => `<div class="line"><span>${l.it.pic} ${l.it.name} · ${qtyLabel(l.it,l.n)}</span><span>${rs(l.amt)}</span></div>`).join("") +
+  $("lines").innerHTML = t.lines.map(l => `<div class="line"><span>${l.it.pic} ${esc(l.it.name)} · ${qtyLabel(l.it,l.n)}</span><span>${rs(l.amt)}</span></div>`).join("") +
     `<div class="line"><span>Delivery</span><span>${t.del ? rs(t.del) : "Free"}</span></div>` +
     `<div class="line total"><span>Estimated total</span><span>${rs(t.total)}</span></div>`;
   $("err").hidden = true; $("sent").hidden = true; $("form").hidden = false; $("sheet").hidden = false; document.body.style.overflow = "hidden";
 });
-function closeSheet(){ $("sheet").hidden = true; document.body.style.overflow = ""; }
 $("closeSheet").addEventListener("click", closeSheet);
 $("sheet").addEventListener("click", e => { if (e.target === $("sheet")) closeSheet(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("sheet").hidden) closeSheet(); });
+
 let loc = null;
-function setLoc(state, msg){
-  $("locBox").classList.toggle("ok", state === "ok");
-  $("locMsg").textContent = msg;
-}
+function setLoc(state, msg){ $("locBox").classList.toggle("ok", state === "ok"); $("locMsg").textContent = msg; }
 $("locBtn").addEventListener("click", () => {
   if (!("geolocation" in navigator)) { setLoc("err", "This browser can't share location. Please type your full address and landmark."); return; }
   $("locBtn").disabled = true; $("locLabel").textContent = "Finding you…";
   navigator.geolocation.getCurrentPosition(p => {
-    loc = { lat: p.coords.latitude.toFixed(6), lng: p.coords.longitude.toFixed(6), acc: Math.round(p.coords.accuracy) };
+    loc = { lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6), acc: Math.round(p.coords.accuracy) };
     $("locBtn").disabled = false; $("locLabel").textContent = "Update location";
     setLoc("ok", `Location added (accurate to about ${loc.acc} m). A map pin will go with your order.`);
   }, err => {
@@ -448,40 +444,53 @@ $("locBtn").addEventListener("click", () => {
       : "Couldn't get your location. Turn on GPS and try again, or type your full address.");
   }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
 });
-
 try { const d = JSON.parse(localStorage.getItem("dl-cust") || "{}"); ["cname","cphone","caddr","cland"].forEach(k => d[k] && ($(k).value = d[k])); } catch(e) {}
 
-$("form").addEventListener("submit", e => {
+const orderCode = () => { const d = new Date(), p = n => String(n).padStart(2, "0");
+  return `DL${p(d.getDate())}${p(d.getMonth()+1)}-${p(d.getHours())}${p(d.getMinutes())}${Math.random().toString(36).slice(2,4).toUpperCase()}`; };
+
+let lastWa = "";
+function openWa(){ const a = document.createElement("a"); a.href = lastWa; a.target = "_blank"; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove(); }
+$("form").addEventListener("submit", async e => {
   e.preventDefault();
   const t = totals(), v = k => $(k).value.trim();
   const mobile = v("cphone").replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, "");
   let msg = "";
-  if (t.sub < SHOP.minOrder) msg = `Minimum order is ${rs(SHOP.minOrder)}. Add ${rs(SHOP.minOrder - t.sub)} more.`;
+  if (!t.lines.length) msg = "Your basket is empty.";
+  else if (t.sub < SHOP.minOrder) msg = `Minimum order is ${rs(SHOP.minOrder)}. Add ${rs(SHOP.minOrder - t.sub)} more.`;
   else if (!v("cname")) msg = "Enter your name.";
   else if (!/^[6-9]\d{9}$/.test(mobile)) msg = "Enter a 10-digit mobile number, e.g. 98765 43210.";
   else if (v("caddr").length < 8) msg = "Enter your full delivery address.";
   if (msg) { $("err").textContent = msg; $("err").hidden = false; return; }
   try { localStorage.setItem("dl-cust", JSON.stringify({cname:v("cname"),cphone:mobile,caddr:v("caddr"),cland:v("cland")})); } catch(e) {}
+
+  const code = orderCode();
+  const customer = { name: v("cname").slice(0,80), mobile, address: v("caddr").slice(0,300), landmark: v("cland").slice(0,120),
+    lat: loc ? loc.lat : null, lng: loc ? loc.lng : null, slot: $("cslot").value, payment: $("cpay").value, note: v("cnote").slice(0,300) };
+  const items = t.lines.map(l => ({ key: l.it.key, name: l.it.name, local: l.it.local || "", unit: l.it.unit, qty: l.n, rate: l.it.price, pic: l.it.pic || "" }));
+
+  const btn = $("form").querySelector(".send"); btn.disabled = true;
+  // Save to the Order Desk (when connected). WhatsApp opens either way, so no order is lost.
+  if (ShopDB.online) {
+    try { await ShopDB.addOrder({ code, createdMs: Date.now(), status: "new", customer, items, est: t.total, del: t.del }); }
+    catch (err) { console.warn("Order not saved online, sent on WhatsApp only", err); }
+  }
+  btn.disabled = false;
+
   const text = [
-    `*New order – ${SHOP.name}*`, "",
+    `*New order – ${SHOP.name}*`, `Order no: ${code}`, "",
     ...t.lines.map((l,i) => `${i+1}. ${l.it.name} (${l.it.local}) – ${qtyLabel(l.it,l.n)} × ${rs(l.it.price)}/${l.it.unit} – ${rs(l.amt)}`),
     "", `Items: ${rs(t.sub)}`, `Delivery: ${t.del ? rs(t.del) : "Free"}`, `*Estimated total: ${rs(t.total)}*`, "",
-    `Name: ${v("cname")}`, `Mobile: ${mobile}`, `Address: ${v("caddr")}`,
-    v("cland") ? `Landmark: ${v("cland")}` : null,
-    loc ? `📍 Location: https://maps.google.com/?q=${loc.lat},${loc.lng}` : "📍 Location: not shared",
-    `Delivery: ${$("cslot").value}`, `Payment: ${$("cpay").value}`,
-    v("cnote") ? `Note: ${v("cnote")}` : null
+    `Name: ${customer.name}`, `Mobile: ${mobile}`, `Address: ${customer.address}`,
+    customer.landmark ? `Landmark: ${customer.landmark}` : null,
+    loc ? `📍 Location: https://maps.google.com/?q=${loc.lat.toFixed(6)},${loc.lng.toFixed(6)}` : "📍 Location: not shared",
+    `Delivery: ${customer.slot}`, `Payment: ${customer.payment}`,
+    customer.note ? `Note: ${customer.note}` : null
   ].filter(x => x !== null).join("\n");
   lastWa = `https://wa.me/${SHOP.whatsapp}?text=${encodeURIComponent(text)}`;
   openWa();
   $("form").hidden = true; $("sent").hidden = false;
 });
-let lastWa = "";
-function openWa(){
-  const a = document.createElement("a");
-  a.href = lastWa; a.target = "_blank"; a.rel = "noopener";
-  document.body.appendChild(a); a.click(); a.remove();
-}
 $("waAgain").addEventListener("click", openWa);
 $("newOrder").addEventListener("click", () => {
   cart = {}; save(); loc = null; $("cnote").value = "";
@@ -489,7 +498,10 @@ $("newOrder").addEventListener("click", () => {
   closeSheet(); render(); scrollTo({top: 0, behavior: "smooth"});
 });
 
-render();
+paintHeader(); render();
+// Fetch today's rates and stock from the Order Desk
+ShopDB.getCatalog().then(list => { if (Array.isArray(list) && list.length) { setItems(list); paintHeader(); render(); } })
+  .catch(err => console.warn("Using built-in rates", err));
 </script>
 </body>
 </html>

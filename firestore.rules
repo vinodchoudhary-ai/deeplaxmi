@@ -1,0 +1,30 @@
+rules_version = '2';
+// Deeplaxmi security rules. Paste into Firebase console → Firestore Database → Rules → Publish.
+// Replace OWNER_EMAIL with the email you use to log in to the Order Desk.
+// To give a staff member access, add their login email to the list, e.g. ['owner@gmail.com', 'staff@gmail.com'].
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email in ['OWNER_EMAIL'];
+    }
+
+    // Item list and rates: anyone can read, only the owner can change.
+    match /shop/catalog {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders: customers can only create a new order. Only the owner can see, edit or delete orders.
+    match /orders/{orderId} {
+      allow create: if request.resource.data.keys().hasOnly(['code', 'createdMs', 'createdAt', 'status', 'customer', 'items', 'est', 'del'])
+                    && request.resource.data.status == 'new'
+                    && request.resource.data.code is string && request.resource.data.code.size() < 20
+                    && request.resource.data.customer is map
+                    && request.resource.data.items is list
+                    && request.resource.data.items.size() > 0
+                    && request.resource.data.items.size() <= 60;
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}
