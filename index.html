@@ -105,7 +105,7 @@ h2 small{font:600 .75rem var(--body);color:var(--muted)}
 .pill{pointer-events:auto;width:100%;max-width:560px;display:flex;align-items:center;gap:12px;padding:10px 10px 10px 18px;border-radius:20px;
   background:color-mix(in srgb,var(--bg2) 80%,transparent);border:1px solid var(--edge);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 20px 50px -15px rgba(0,0,0,.6)}
 .pill .info{flex:1;min-width:0}
-.pill strong{font:800 1.25rem var(--display);font-variant-numeric:tabular-nums}
+.pill strong{font:800 1rem var(--display);font-variant-numeric:tabular-nums}
 .pill small{display:block;color:var(--muted);font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .meter{height:4px;border-radius:4px;background:var(--glass-hi);margin-top:5px;overflow:hidden}
 .meter i{display:block;height:100%;background:linear-gradient(90deg,var(--mango),var(--lime));transition:width .4s}
@@ -239,8 +239,8 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding-block:10px 2
 <main><div class="wrap" id="list"></div></main>
 
 <div class="cart" id="cart" hidden><div class="wrap"><div class="pill">
-  <div class="info"><strong id="cartTotal"></strong><small id="cartCount"></small><div class="meter"><i id="meter"></i></div></div>
-  <button class="go" id="openCheckout" type="button">Checkout →</button>
+  <div class="info"><strong id="cartTotal"></strong><small id="cartIcons"></small></div>
+  <button class="go" id="openCheckout" type="button">View bill →</button>
 </div></div></div>
 
 <div class="sheet" id="sheet" hidden>
@@ -370,10 +370,9 @@ function updateCart(){
   const pill = document.querySelector('.pill'); pill.classList.remove('bump'); void pill.offsetWidth; pill.classList.add('bump');
   const t = totals();
   $("cart").hidden = !t.lines.length;
-  $("cartTotal").textContent = rs(t.sub);
-  $("cartCount").textContent = t.lines.length + (t.lines.length === 1 ? " item" : " items") +
-    (t.sub < SHOP.freeDeliveryAbove ? ` · ${rs(SHOP.freeDeliveryAbove - t.sub)} more for free delivery` : " · free delivery unlocked");
-  $("meter").style.width = Math.min(100, t.sub / SHOP.freeDeliveryAbove * 100) + "%";
+  const n = t.lines.length;
+  $("cartTotal").textContent = n + (n === 1 ? " item" : " items") + " in basket";
+  $("cartIcons").textContent = t.lines.slice(-6).map(l => l.it.pic).join(" ");
 }
 
 $("openCheckout").addEventListener("click", () => {
