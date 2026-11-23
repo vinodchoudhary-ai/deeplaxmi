@@ -35,14 +35,6 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 
 /* hero */
 .hero{position:relative;overflow:hidden;isolation:isolate}
-.orb{position:absolute;border-radius:50%;filter:blur(60px);opacity:.55;z-index:-1;animation:drift 14s ease-in-out infinite alternate}
-.o1{width:320px;height:320px;background:var(--lime);top:-120px;left:-80px}
-.o2{width:260px;height:260px;background:var(--tomato);top:-60px;right:-60px;animation-delay:-5s}
-.o3{width:240px;height:240px;background:var(--mango);bottom:-140px;left:40%;animation-delay:-9s}
-@keyframes drift{to{transform:translate(40px,30px) scale(1.15)}}
-.grid-lines{position:absolute;inset:0;z-index:-1;opacity:.35;
-  background-image:linear-gradient(var(--edge) 1px,transparent 1px),linear-gradient(90deg,var(--edge) 1px,transparent 1px);
-  background-size:36px 36px;mask-image:linear-gradient(to bottom,#000 10%,transparent 90%);-webkit-mask-image:linear-gradient(to bottom,#000 10%,transparent 90%)}
 .hero .wrap{padding-block:28px 26px}
 .brand{display:flex;align-items:center;gap:10px;font:700 .8rem var(--display);letter-spacing:.14em;text-transform:uppercase}
 .logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:conic-gradient(from 200deg,var(--lime),var(--aqua),var(--mango),var(--tomato),var(--lime));color:#08110a;font-weight:800;font-size:1rem;letter-spacing:0}
@@ -140,6 +132,10 @@ select option{background:var(--bg2);color:var(--ink)}
 .locbtn svg{width:20px;height:20px;fill:currentColor}
 .locbtn[disabled]{opacity:.7;cursor:wait}
 .loc.ok .locbtn{background:var(--glass-hi);color:var(--ink);border:1px solid var(--edge)}
+.sent{align-items:center;text-align:center}
+.sent p{margin:0;max-width:40ch}
+.sent .send,.sent .ghost{width:100%}
+.tick{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font:800 1.8rem var(--display);color:#04140a;background:linear-gradient(135deg,var(--lime),var(--aqua));box-shadow:0 0 40px -6px var(--lime)}
 .err{color:var(--tomato);font-weight:600;font-size:.88rem;margin:0}
 .send{display:flex;align-items:center;justify-content:center;gap:10px;font:700 1.02rem var(--body);padding:15px;border-radius:16px;background:#25d366;color:#04140a;border:0;cursor:pointer;box-shadow:0 10px 30px -10px #25d366}
 .send svg{width:22px;height:22px;fill:currentColor}
@@ -236,7 +232,7 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding-block:10px 2
     <div class="orbit" id="orbit" aria-hidden="true"><div class="ring"></div><div class="ring r2"></div><div class="core"><span><b>Fresh</b>EVERY<br>MORNING</span></div></div>
   </div>
 </section>
-<div class="ticker" aria-label="Today's rates"><span class="tag"><i></i>TODAY</span><div class="track" id="track"></div></div>
+<div class="ticker" aria-label="Today's rates"><span class="tag"><i></i>TODAY</span><div class="track" id="track" aria-hidden="true"></div></div>
 
 <div class="bar"><div class="wrap">
   <div class="search"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -252,12 +248,20 @@ footer{color:var(--muted);font-size:.8rem;text-align:center;padding-block:10px 2
 </div></div></div>
 
 <div class="sheet" id="sheet" hidden>
+  <div class="panel sent" id="sent" hidden>
+    <div class="tick">✓</div>
+    <h3>Almost done!</h3>
+    <p>WhatsApp has opened with your order typed. <b>Press send in WhatsApp</b> to confirm it with Deeplaxmi.</p>
+    <p class="small">WhatsApp didn't open? Tap below to try again, or message us on <b id="waShow2"></b>.</p>
+    <button class="send" type="button" id="waAgain">Open WhatsApp again</button>
+    <button class="ghost" type="button" id="newOrder">I've sent it. Start a new order</button>
+  </div>
   <form class="panel" id="form" novalidate>
     <h3>Your basket</h3>
     <div class="lines" id="lines"></div>
     <div class="two">
       <label>Name<input id="cname" autocomplete="name" required></label>
-      <label>Mobile<input id="cphone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" placeholder="10 digits" required></label>
+      <label>Mobile<input id="cphone" type="tel" inputmode="tel" autocomplete="tel" maxlength="16" placeholder="10-digit mobile" required></label>
     </div>
     <label>Delivery address<textarea id="caddr" rows="2" autocomplete="street-address" placeholder="Flat, building, society, road" required></textarea></label>
     <div class="loc" id="locBox">
@@ -311,12 +315,13 @@ const photoUrl = id => `https://images.pexels.com/photos/${id}/pexels-photo-${id
 const CATS = [["All","All"],["Sabzi","Vegetables"],["Leafy","Leafy greens"],["Fruits","Fruits"]];
 const $ = id => document.getElementById(id);
 const rs = n => "₹" + Math.round(n).toLocaleString("en-IN");
+const esc = t => String(t).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 let cat = "All", q = "", cart = {};
 try { cart = JSON.parse(localStorage.getItem("dl-cart") || "{}") || {}; } catch(e) { cart = {}; }
 const save = () => { try { localStorage.setItem("dl-cart", JSON.stringify(cart)); } catch(e) {} };
 const step = it => it.unit === "kg" ? 0.25 : 1;
 function qtyLabel(it, n){
-  if (it.unit === "kg") return n < 1 ? (n*1000) + " g" : (+n.toFixed(2)) + " kg";
+  if (it.unit === "kg") return n < 1 ? Math.round(n*1000) + " g" : (+n.toFixed(2)) + " kg";
   return n + " " + ({pc: n>1?"pcs":"pc", bunch: n>1?"bunches":"bunch", dozen:"dz"}[it.unit]);
 }
 
@@ -328,7 +333,7 @@ $("stats").innerHTML =
   `<div class="stat"><b>${ITEMS.length}+</b><span>fresh items</span></div>` +
   `<div class="stat"><b>${rs(SHOP.freeDeliveryAbove)}</b><span>free delivery above</span></div>` +
   `<div class="stat"><b>COD</b><span>cash or UPI</span></div>`;
-$("waShow").textContent = "+" + SHOP.whatsapp.replace(/^91/, "91 ");
+$("waShow").textContent = $("waShow2").textContent = "+" + SHOP.whatsapp.replace(/^91(\d{5})(\d{5})$/, "91 $1 $2");
 $("cslot").innerHTML = SHOP.slots.map(s => `<option>${s}</option>`).join("");
 $("chips").innerHTML = CATS.map(([k,l]) => `<button class="chip" type="button" data-c="${k}" aria-pressed="${k===cat}">${l}</button>`).join("");
 $("chips").addEventListener("click", e => {
@@ -370,14 +375,22 @@ function render(){
     const g = shown.filter(it => it.cat === k);
     if (g.length) html += `<h2>${l} <small>${g.length}</small></h2><div class="tiles">${g.map(tile).join("")}</div>`;
   }
-  $("list").innerHTML = html || `<p class="empty">Nothing matches “${q}”. Add it in the note at checkout and we'll bring it if available.</p>`;
+  $("list").innerHTML = html || `<p class="empty">Nothing matches “${esc(q)}”. Add it in the note at checkout and we'll bring it if available.</p>`;
   updateCart();
 }
 function commitQty(inp){
-  const id = +inp.dataset.q, it = ITEMS[id], v = parseQty(it, inp.value);
-  if (v > 0) cart[id] = v; else delete cart[id];
-  $("c"+id).innerHTML = control(it); $("t"+id).classList.toggle("on", !!cart[id]); save(); updateCart();
+  const id = +inp.dataset.q, it = ITEMS[id], raw = inp.value.trim(), v = parseQty(it, raw);
+  if (v > 0) { cart[id] = v; inp.value = qtyVal(it, v); save(); updateCart(); return; }
+  if (/^0+([.,]0*)?\s*(k?g)?$/i.test(raw)) {               // typed 0 → remove
+    delete cart[id]; $("c"+id).innerHTML = control(it); $("t"+id).classList.remove("on"); save(); updateCart(); return;
+  }
+  inp.value = qtyVal(it, cart[id] || step(it));            // letters or blank → keep old amount
 }
+function liveQty(inp){                                     // keep basket in step while the customer types
+  const id = +inp.dataset.q, v = parseQty(ITEMS[id], inp.value);
+  if (v > 0) { cart[id] = v; save(); }
+}
+$("list").addEventListener("input", e => { if (e.target.dataset.q !== undefined) liveQty(e.target); });
 $("list").addEventListener("focusin", e => { if (e.target.dataset.q !== undefined) e.target.select(); });
 $("list").addEventListener("change", e => { if (e.target.dataset.q !== undefined) commitQty(e.target); });
 $("list").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset.q !== undefined) { e.preventDefault(); e.target.blur(); } });
@@ -391,7 +404,7 @@ $("list").addEventListener("click", e => {
 });
 
 function totals(){
-  const lines = Object.entries(cart).map(([id,n]) => ({it: ITEMS[id], n})).filter(l => l.it).map(l => ({...l, amt: l.it.price*l.n}));
+  const lines = Object.entries(cart).map(([id,n]) => ({it: ITEMS[id], n})).filter(l => l.it).map(l => ({...l, amt: Math.round(l.it.price*l.n)}));
   const sub = lines.reduce((s,l) => s + l.amt, 0);
   const del = sub >= SHOP.freeDeliveryAbove || sub === 0 ? 0 : SHOP.deliveryCharge;
   return {lines, sub, del, total: sub + del};
@@ -410,10 +423,12 @@ $("openCheckout").addEventListener("click", () => {
   $("lines").innerHTML = t.lines.map(l => `<div class="line"><span>${l.it.pic} ${l.it.name} · ${qtyLabel(l.it,l.n)}</span><span>${rs(l.amt)}</span></div>`).join("") +
     `<div class="line"><span>Delivery</span><span>${t.del ? rs(t.del) : "Free"}</span></div>` +
     `<div class="line total"><span>Estimated total</span><span>${rs(t.total)}</span></div>`;
-  $("err").hidden = true; $("sheet").hidden = false;
+  $("err").hidden = true; $("sent").hidden = true; $("form").hidden = false; $("sheet").hidden = false; document.body.style.overflow = "hidden";
 });
-$("closeSheet").addEventListener("click", () => $("sheet").hidden = true);
-$("sheet").addEventListener("click", e => { if (e.target === $("sheet")) $("sheet").hidden = true; });
+function closeSheet(){ $("sheet").hidden = true; document.body.style.overflow = ""; }
+$("closeSheet").addEventListener("click", closeSheet);
+$("sheet").addEventListener("click", e => { if (e.target === $("sheet")) closeSheet(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("sheet").hidden) closeSheet(); });
 let loc = null;
 function setLoc(state, msg){
   $("locBox").classList.toggle("ok", state === "ok");
@@ -439,27 +454,39 @@ try { const d = JSON.parse(localStorage.getItem("dl-cust") || "{}"); ["cname","c
 $("form").addEventListener("submit", e => {
   e.preventDefault();
   const t = totals(), v = k => $(k).value.trim();
+  const mobile = v("cphone").replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, "");
   let msg = "";
   if (t.sub < SHOP.minOrder) msg = `Minimum order is ${rs(SHOP.minOrder)}. Add ${rs(SHOP.minOrder - t.sub)} more.`;
   else if (!v("cname")) msg = "Enter your name.";
-  else if (!/^[6-9]\d{9}$/.test(v("cphone"))) msg = "Enter a 10-digit mobile number.";
+  else if (!/^[6-9]\d{9}$/.test(mobile)) msg = "Enter a 10-digit mobile number, e.g. 98765 43210.";
   else if (v("caddr").length < 8) msg = "Enter your full delivery address.";
   if (msg) { $("err").textContent = msg; $("err").hidden = false; return; }
-  try { localStorage.setItem("dl-cust", JSON.stringify({cname:v("cname"),cphone:v("cphone"),caddr:v("caddr"),cland:v("cland")})); } catch(e) {}
+  try { localStorage.setItem("dl-cust", JSON.stringify({cname:v("cname"),cphone:mobile,caddr:v("caddr"),cland:v("cland")})); } catch(e) {}
   const text = [
     `*New order – ${SHOP.name}*`, "",
     ...t.lines.map((l,i) => `${i+1}. ${l.it.name} (${l.it.local}) – ${qtyLabel(l.it,l.n)} × ${rs(l.it.price)}/${l.it.unit} – ${rs(l.amt)}`),
     "", `Items: ${rs(t.sub)}`, `Delivery: ${t.del ? rs(t.del) : "Free"}`, `*Estimated total: ${rs(t.total)}*`, "",
-    `Name: ${v("cname")}`, `Mobile: ${v("cphone")}`, `Address: ${v("caddr")}`,
+    `Name: ${v("cname")}`, `Mobile: ${mobile}`, `Address: ${v("caddr")}`,
     v("cland") ? `Landmark: ${v("cland")}` : null,
     loc ? `📍 Location: https://maps.google.com/?q=${loc.lat},${loc.lng}` : "📍 Location: not shared",
     `Delivery: ${$("cslot").value}`, `Payment: ${$("cpay").value}`,
     v("cnote") ? `Note: ${v("cnote")}` : null
   ].filter(x => x !== null).join("\n");
+  lastWa = `https://wa.me/${SHOP.whatsapp}?text=${encodeURIComponent(text)}`;
+  openWa();
+  $("form").hidden = true; $("sent").hidden = false;
+});
+let lastWa = "";
+function openWa(){
   const a = document.createElement("a");
-  a.href = `https://wa.me/${SHOP.whatsapp}?text=${encodeURIComponent(text)}`;
-  a.target = "_blank"; a.rel = "noopener";
+  a.href = lastWa; a.target = "_blank"; a.rel = "noopener";
   document.body.appendChild(a); a.click(); a.remove();
+}
+$("waAgain").addEventListener("click", openWa);
+$("newOrder").addEventListener("click", () => {
+  cart = {}; save(); loc = null; $("cnote").value = "";
+  setLoc("", "Recommended. Our delivery person gets a map pin to your door."); $("locLabel").textContent = "Share my exact location";
+  closeSheet(); render(); scrollTo({top: 0, behavior: "smooth"});
 });
 
 render();
