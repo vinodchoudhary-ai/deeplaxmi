@@ -96,7 +96,15 @@ h2 small{font:600 .75rem var(--body);color:var(--muted)}
 .add:hover{background:var(--lime);color:var(--on-accent);border-color:transparent}
 .step{display:flex;align-items:center;border-radius:12px;background:var(--lime);color:var(--on-accent)}
 .step button{font:800 1.15rem var(--body);width:36px;height:38px;border:0;background:transparent;color:inherit;cursor:pointer}
-.step output{flex:1;text-align:center;font-weight:700;font-size:.85rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.qty{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:2px;margin:4px 0;padding:0 4px;height:30px;border-radius:8px;background:rgba(255,255,255,.28);cursor:text}
+.qty input{width:100%;min-width:0;max-width:44px;padding:0;border:0;background:transparent;color:inherit;font:800 .95rem var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.qty input:focus{outline:none}
+.qty:focus-within{background:rgba(255,255,255,.55);box-shadow:0 0 0 2px rgba(255,255,255,.8)}
+.qty span{font:700 .72rem var(--body);opacity:.8}
+.step .qty{flex-direction:row;color:var(--on-accent);font-size:inherit}
+.step .qty input{color:var(--on-accent)}
+.step button{flex:none}
+.hint{font-size:.7rem;color:var(--muted);text-align:center;margin-top:-2px}
 .empty{color:var(--muted);padding:30px 0;text-align:center}
 
 /* cart pill */
@@ -331,10 +339,24 @@ $("chips").addEventListener("click", e => {
 });
 $("q").addEventListener("input", e => { q = e.target.value.trim().toLowerCase(); render(); });
 
+const unitShort = it => ({kg:"kg", pc:"pc", bunch:"bun", dozen:"dz"}[it.unit]);
+const unitWord = it => ({kg:"kg", pc:"pieces", bunch:"bunches", dozen:"dozen"}[it.unit]);
+const qtyVal = (it, n) => String(+n.toFixed(2));
+/* Reads what the customer typed. For kg items, "500g" or any number 50+ is taken as grams. */
+function parseQty(it, raw){
+  const t = String(raw).toLowerCase().replace(",", ".").trim();
+  let v = parseFloat(t); if (!isFinite(v) || v <= 0) return 0;
+  if (it.unit === "kg") {
+    if ((/g/.test(t) && !/kg/.test(t)) || v >= 50) v = v / 1000;
+    v = Math.round(v * 20) / 20;            // nearest 50 g
+    return Math.min(Math.max(v, 0.05), 50);
+  }
+  return Math.min(Math.max(Math.round(v), 1), 100);
+}
 function control(it){
   const n = cart[it.id] || 0;
   if (!n) return `<button class="add" type="button" data-add="${it.id}">+ Add</button>`;
-  return `<div class="step"><button type="button" data-dec="${it.id}" aria-label="Less ${it.name}">−</button><output>${qtyLabel(it,n)}</output><button type="button" data-inc="${it.id}" aria-label="More ${it.name}">+</button></div>`;
+  return `<div class="step"><button type="button" data-dec="${it.id}" aria-label="Less ${it.name}">−</button><label class="qty"><input type="text" inputmode="decimal" autocomplete="off" data-q="${it.id}" value="${qtyVal(it,n)}" aria-label="Quantity of ${it.name} in ${unitWord(it)}"><span>${unitShort(it)}</span></label><button type="button" data-inc="${it.id}" aria-label="More ${it.name}">+</button></div>`;
 }
 const tile = it => `<div class="tile${cart[it.id]?" on":""}" id="t${it.id}" style="--h:${it.hue};--i:${it.id%10}">
   <div class="pic">${PHOTOS[it.name] ? `<img src="${photoUrl(PHOTOS[it.name])}" alt="Fresh ${it.name}" loading="lazy" decoding="async" onerror="this.remove()">` : ""}<span>${it.pic}</span><span class="chipprice">${rs(it.price)}<small>/${it.unit}</small></span></div>
@@ -351,6 +373,14 @@ function render(){
   $("list").innerHTML = html || `<p class="empty">Nothing matches “${q}”. Add it in the note at checkout and we'll bring it if available.</p>`;
   updateCart();
 }
+function commitQty(inp){
+  const id = +inp.dataset.q, it = ITEMS[id], v = parseQty(it, inp.value);
+  if (v > 0) cart[id] = v; else delete cart[id];
+  $("c"+id).innerHTML = control(it); $("t"+id).classList.toggle("on", !!cart[id]); save(); updateCart();
+}
+$("list").addEventListener("focusin", e => { if (e.target.dataset.q !== undefined) e.target.select(); });
+$("list").addEventListener("change", e => { if (e.target.dataset.q !== undefined) commitQty(e.target); });
+$("list").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset.q !== undefined) { e.preventDefault(); e.target.blur(); } });
 $("list").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b || !b.closest("[id^=c]")) return;
   const id = +(b.dataset.add ?? b.dataset.inc ?? b.dataset.dec); const it = ITEMS[id];
